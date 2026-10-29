@@ -5,7 +5,15 @@
 
 ---
 
-## Quick Reference Summary of Our Project
+## Table of Contents
+1. [Quick Reference Summary](#quick-reference-summary)
+2. [Section A: Purpose of Every Major File in This Project](#section-a-purpose-of-every-major-file-in-this-project)
+3. [Section B: The Complete CI/CD Workflow in Plain Language](#section-b-the-complete-cicd-workflow-in-plain-language)
+4. [Section C: 35 Essential Viva Questions & Practical Answers](#section-c-35-essential-viva-questions--practical-answers)
+
+---
+
+## Quick Reference Summary
 - **Application**: Python Flask REST Web App with a diagnostic dashboard (`app.py`).
 - **Health Check Endpoint**: `/health` returning HTTP 200 with JSON payload (`{"status": "healthy", ...}`).
 - **Testing Framework**: `pytest` running 6 automated tests in `tests/test_app.py`.
@@ -13,11 +21,47 @@
 - **CI/CD Orchestrator**: Declarative pipeline in `Jenkinsfile` with 6 automated stages.
 - **Local Simulation**: `simulate_pipeline.ps1` for local live demonstration of pipeline stages and failure handling.
 - **Source Control**: Git & GitHub with automated triggers.
-- **Cloud Hosting**: Google Cloud Platform (Cloud Run serverless containers).
+- **Cloud Hosting**: Google Cloud Platform (Cloud Run serverless containers with $0 idle cost).
 
 ---
 
-## 30 Essential Viva Questions & Practical Answers
+## Section A: Purpose of Every Major File in This Project
+
+| File Name | Purpose & Role in DevOps Architecture |
+| :--- | :--- |
+| [`app.py`](app.py) | The core Python Flask web application. Implements the `/` web dashboard, the `/health` JSON monitoring endpoint, and `/api/info` diagnostic metadata. Enforces `debug=False` for production security. |
+| [`requirements.txt`](requirements.txt) | Python dependency manifest listing `flask`, `pytest`, `gunicorn`, and `requests`. Ensures exact, reproducible package installations across local virtualenvs, Jenkins test agents, and Docker containers. |
+| [`pytest.ini`](pytest.ini) | Pytest configuration file. Sets `pythonpath = .` and `testpaths = tests`, ensuring test modules can cleanly import `from app import app` without path errors. |
+| [`tests/test_app.py`](tests/test_app.py) | Automated test suite. Contains 6 unit and integration tests asserting HTTP status codes (200, 404, 405), JSON structure, Content-Type headers, and HTML content. Serves as the automated quality gate in the CI pipeline. |
+| [`Dockerfile`](Dockerfile) | Instructions for building the container image. Uses `python:3.11-slim`, layer caching, built-in `HEALTHCHECK`, and drops root privileges by running as unprivileged user `appuser` (UID 1000). |
+| [`.dockerignore`](.dockerignore) | Excludes unnecessary files (`venv/`, `.git/`, `tests/`, `.env`, documentation, caches) from being sent to the Docker daemon, minimizing build context size and preventing leaked secrets. |
+| [`Jenkinsfile`](Jenkinsfile) | Pipeline-as-Code definition. Specifies 6 declarative stages (`Checkout`, `Install Test Dependencies`, `Run Automated Tests`, `Build Docker Image`, `Deploy Application`, `Verify Deployment`) with cross-platform OS handling and JUnit reporting. |
+| [`simulate_pipeline.ps1`](simulate_pipeline.ps1) | Local Windows PowerShell simulator for the Jenkins pipeline. Enables immediate live demonstrations of the 6 stages and includes `-SimulateFailure` to demonstrate automated pipeline halting. |
+| [`deploy_gcp.ps1`](deploy_gcp.ps1) | Automated PowerShell deployment script for Google Cloud Run. Validates `gcloud`, enables required APIs, sets cost guardrails (`min 0, max 1, 256Mi`), and verifies the live HTTPS endpoint. |
+| [`deploy_gcp.sh`](deploy_gcp.sh) | Automated Bash deployment script for Linux environments and Jenkins CI agents targeting Google Cloud Run. |
+| [`.gitignore`](.gitignore) | Version control exclusion rules. Prevents virtual environments, local caches, editor settings, and credential files (`.env`, `credentials.json`) from being tracked in Git. |
+| [`README.md`](README.md) | Exhaustive academic project documentation with architecture diagrams, step-by-step installation guides, Jenkins setup, Docker commands, security policies, and future enhancements. |
+| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | Minute-by-minute 5-minute college viva demonstration script with exact commands and examiner walk-throughs. |
+| [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md) | Official project submission checklist, verification audit records, and viva review notes. |
+
+---
+
+## Section B: The Complete CI/CD Workflow in Plain Language
+
+1. **Code Modification**: The developer makes changes to the application code (`app.py`) or adds new features on their local machine.
+2. **Local Verification**: The developer runs `pytest -v` to confirm unit tests pass locally before committing.
+3. **Commit & Push**: The developer stages changes and pushes to GitHub: `git push origin main`.
+4. **Trigger**: GitHub detects the push event and sends an automated Webhook notification to the Jenkins server (or Jenkins detects the commit via SCM polling).
+5. **Stage 1 (Checkout)**: Jenkins pulls the latest commit from the GitHub repository into an isolated workspace.
+6. **Stage 2 (Dependency Preparation)**: Jenkins creates or activates an isolated Python virtual environment (`venv`) and installs `requirements.txt`.
+7. **Stage 3 (Automated Testing)**: Jenkins runs `pytest --junitxml=test-results.xml`. If any test fails, pytest exits with code 1, Jenkins marks the stage as FAILED, and the build aborts immediately. Broken code never moves forward.
+8. **Stage 4 (Container Packaging)**: If tests pass, Jenkins executes `docker build` using the `Dockerfile`, creating an immutable, portable container image tagged with the Jenkins build number (`${BUILD_NUMBER}`) and `latest`.
+9. **Stage 5 (Deployment)**: Jenkins deploys the container. In a local environment, it stops the old container and launches the updated container (`docker run -d -p 5000:5000`). In a cloud environment, it runs `gcloud run deploy` to Google Cloud Run.
+10. **Stage 6 (Health Verification)**: The pipeline queries the `/health` endpoint (`http://localhost:5000/health` or the Cloud Run URL). If it returns HTTP 200 with `{"status": "healthy"}`, the deployment is verified and marked as SUCCESS.
+
+---
+
+## Section C: 35 Essential Viva Questions & Practical Answers
 
 ### 1. What is DevOps?
 **Answer**:  
@@ -277,3 +321,40 @@ Stage 3 caught the test failure, emitted an error, and immediately aborted the p
 **Answer**:  
 - **Dockerfile `HEALTHCHECK`**: Built into the container image metadata. The Docker engine continuously polls `http://localhost:5000/health` every 30 seconds while the container is running in production and marks its status as `healthy` or `unhealthy` in `docker ps`.
 - **Jenkinsfile Stage 6 (`Verify Deployment`)**: A one-time deployment smoke test executed immediately after container launch to confirm that the container started cleanly, bound the host port, and is serving traffic before Jenkins marks the build as successful.
+
+---
+
+### 31. What is a pytest fixture (`@pytest.fixture`), and how does `client()` work in `tests/test_app.py`?
+**Answer**:  
+A pytest fixture is a reusable function decorated with `@pytest.fixture` that prepares a baseline environment or mock resource before a test runs. In our `tests/test_app.py`, the `client()` fixture configures `app.config["TESTING"] = True` and yields a `FlaskClient`. This allows tests to simulate HTTP requests (GET, POST) directly in-memory without needing to start a live socket server.
+
+---
+
+### 32. What is a Container Image Registry, and how does it fit between Docker and Google Cloud Platform?
+**Answer**:  
+A Container Image Registry is a centralized catalog for storing, versioning, and sharing Docker container images (e.g., **Google Artifact Registry**, Docker Hub, AWS ECR). In our GCP deployment flow:
+1. Docker builds the container image.
+2. The image is tagged and pushed to **Google Artifact Registry** (`us-central1-docker.pkg.dev/<project>/<repo>/devops-mini-project:latest`).
+3. Google Cloud Run pulls the image directly from the Artifact Registry to instantiate and run the serverless container.
+
+---
+
+### 33. What IAM (Identity and Access Management) roles are required in Google Cloud for automated Cloud Run deployments?
+**Answer**:  
+To deploy containers automatically via CI/CD, the deployment service account requires:
+1. `roles/run.admin` (Cloud Run Admin): To create, update, and manage Cloud Run revisions and services.
+2. `roles/artifactregistry.writer`: To push container images into Google Artifact Registry.
+3. `roles/iam.serviceAccountUser`: To allow Cloud Run to act as the runtime service account.
+4. `roles/cloudbuild.builds.editor`: When building images using Cloud Build directly from source.
+
+---
+
+### 34. How can a GitHub Webhook be cryptographically secured against unauthorized trigger requests?
+**Answer**:  
+When setting up a GitHub webhook, GitHub allows defining a **Secret Token**. When an event occurs, GitHub computes an HMAC-SHA256 signature of the payload using the secret token and attaches it in the `X-Hub-Signature-256` HTTP header. The receiving Jenkins server calculates the same HMAC hash using its stored secret and verifies that the signatures match before triggering the pipeline, protecting against replay and spoofing attacks.
+
+---
+
+### 35. Why is Flask's built-in server not recommended for production, and how does our container address this?
+**Answer**:  
+Flask's built-in development server (`app.run()`) is single-threaded by default and not optimized for security, high concurrency, or performance. In our `requirements.txt`, we included `gunicorn` (Green Unicorn), a production-grade Python WSGI HTTP server that uses pre-fork worker processes to handle concurrent client requests efficiently. In a production container, `gunicorn -w 2 -b 0.0.0.0:5000 app:app` replaces `python app.py`.

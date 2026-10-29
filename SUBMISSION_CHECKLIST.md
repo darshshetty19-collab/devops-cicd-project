@@ -1,45 +1,34 @@
-# College DevOps Mini-Project: Official Submission Checklist & Viva Guide
+# Official DevOps Mini-Project Submission Checklist & Status Audit
 
 **Project Title**: Automated CI/CD Pipeline for a Python Web Application Using Jenkins, Docker, GitHub, and Google Cloud Platform  
 **Academic Target**: 3rd Year B.Tech Computer Science & Data Science Engineering  
-**Submission Date**: Friday Morning Demonstration  
+**Audit Timestamp**: 2026-10-29  
+**Status Standard**:  
+- **VERIFIED**: Executed successfully and supported by actual command output/logs.  
+- **IMPLEMENTED, NOT VERIFIED**: Files exist and are syntactically valid, but execution has not been confirmed due to external dependencies.  
+- **BLOCKED**: A specific missing dependency, permission, or manual external action prevents execution.  
 
 ---
 
-## 1. Completed Features
+## 1. Project Requirement Status Checklist
 
-- [x] **Flask Web Application (`app.py`)**:
-  - Live diagnostic web dashboard with pipeline automation flow diagram.
-  - Dedicated `/health` endpoint returning HTTP 200 with structured JSON (`status`, `service`, `version`, `timestamp`).
-  - `/api/info` diagnostic endpoint returning pipeline stage metadata.
-  - Hardened with `debug=False` and configurable `PORT` and `APP_VERSION` environment variables.
-- [x] **Automated Test Suite (`tests/test_app.py`)**:
-  - 6 unit & integration tests written with `pytest`.
-  - Configured `pytest.ini` with `pythonpath = .`.
-  - Tests verify HTTP 200, 404, 405 Method Not Allowed, JSON schema, and HTML content.
-- [x] **Optimized Containerization (`Dockerfile` & `.dockerignore`)**:
-  - Multi-platform lightweight base image (`python:3.11-slim`).
-  - Docker layer caching for dependencies.
-  - Security hardening: non-root execution (`USER appuser`, UID 1000).
-  - Built-in container healthcheck instruction (`HEALTHCHECK`).
-  - Comprehensive `.dockerignore` excluding `.git`, `venv`, tests, caches, and secrets.
-- [x] **Declarative CI/CD Pipeline (`Jenkinsfile`)**:
-  - 6 discrete stages: `Checkout`, `Install Test Dependencies`, `Run Automated Tests`, `Build Docker Image`, `Deploy Application`, `Verify Deployment`.
-  - Cross-platform support (`isUnix()` for Linux/macOS and batch/PowerShell for Windows).
-  - Automated JUnit XML test result reporting (`test-results.xml`).
-  - Automated pipeline halting on test failure.
-- [x] **Pipeline Simulation Tool (`simulate_pipeline.ps1`)**:
-  - Full local simulation of all 6 stages.
-  - Controllable failure injection (`-SimulateFailure`) for live examiner demonstration.
-- [x] **Google Cloud Platform Automation (`deploy_gcp.ps1`, `deploy_gcp.sh`)**:
-  - Serverless Google Cloud Run deployment scripts with cost guardrails (min 0, max 1, 256Mi RAM = $0 idle cost).
-- [x] **Git Version Control & Security Audit**:
-  - Clean git history on branch `main`.
-  - Zero hardcoded secrets, passwords, or tokens.
-  - Comprehensive `.gitignore`.
-- [x] **Documentation & Viva Preparation**:
-  - Detailed `README.md` with Mermaid architecture diagrams.
-  - `VIVA.md` with 30 in-depth project-specific questions and answers.
+| Requirement / Component | Status | Verification Evidence / Log |
+| :--- | :--- | :--- |
+| **Python Virtual Environment (`venv`)** | **VERIFIED** | Python 3.13.14 virtualenv created; `pip list` confirmed Flask, pytest, gunicorn, requests installed. |
+| **Flask Web App (`app.py`)** | **VERIFIED** | Verified with `verification/verify_flask_app.py`. Home page, `/health`, and `/api/info` return HTTP 200 with JSON & HTML. |
+| **Flask Security Hardening** | **VERIFIED** | Enforced `debug=False`, host `0.0.0.0`, dynamic port resolution (`PORT` env var). |
+| **Automated Test Suite (`tests/test_app.py`)** | **VERIFIED** | 6 of 6 tests passed in 0.41s (`verification/pytest_output.txt`). JUnit XML exported to `verification/test-results.xml`. |
+| **Controlled Pipeline Failure Handling** | **VERIFIED** | Demonstrated in `verification/controlled_test_failure.log` & `verification/pipeline_failure_log.txt`. Test failure aborts pipeline at Stage 3. |
+| **Local Pipeline Simulator (`simulate_pipeline.ps1`)** | **VERIFIED** | All 6 stages executed sequentially (`verification/pipeline_success_log.txt`). |
+| **Git Version Control & Security** | **VERIFIED** | Initialized repository on `main` branch with 4 clean commits. `.gitignore` audited; zero secrets or caches tracked. |
+| **Documentation & Viva Guides** | **VERIFIED** | [`README.md`](README.md), [`VIVA.md`](VIVA.md) (35 questions), [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md), and [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
+| **Dockerfile & Container Security** | **IMPLEMENTED, NOT VERIFIED** | `Dockerfile` created with `python:3.11-slim`, layer caching, unprivileged `USER appuser`, and `HEALTHCHECK`. |
+| **Docker Build & Run on Host** | **BLOCKED** | Docker Desktop is not installed on Windows host (`Get-Command docker` returned not found). WSL 2 is present, but Docker is missing inside Ubuntu. |
+| **Declarative Jenkinsfile (`Jenkinsfile`)** | **IMPLEMENTED, NOT VERIFIED** | 6 stages syntactically validated with cross-platform OS handling (`isUnix()`) and JUnit report parsing. |
+| **Live Jenkins Server Execution** | **BLOCKED** | Host machine has Java JDK 24.0.1. Jenkins LTS requires Java 17 or 21 LTS. Installing JDK 21 / Docker requires administrator privileges. |
+| **GCP Cloud Run Scripts (`deploy_gcp.*`)** | **IMPLEMENTED, NOT VERIFIED** | Scripts configured with API pre-checks, cost caps (`min 0, max 1, 256Mi`), and live health probes. |
+| **Live Google Cloud Deployment** | **BLOCKED** | Google Cloud SDK (`gcloud`) is not installed locally and no GCP credentials exist on this laptop. |
+| **GitHub Remote Push** | **BLOCKED (Requires User Action)** | Git repo is ready to push; GitHub CLI (`gh`) token has expired, requiring student to run `gh auth login` or set git remote. |
 
 ---
 
@@ -64,13 +53,14 @@ tests/test_app.py::test_api_info_endpoint PASSED                         [ 83%]
 tests/test_app.py::test_404_not_found PASSED                             [100%]
 
 --------------- generated xml file: D:\devops\test-results.xml ----------------
-============================== 6 passed in 0.48s ==============================
+============================== 6 passed in 0.41s ==============================
 ```
 
 - **Total Tests**: 6
 - **Passed**: 6 (100%)
 - **Failed**: 0
-- **Duration**: 0.48 seconds
+- **Duration**: 0.41 seconds
+- **Log Location**: [`verification/pytest_output.txt`](verification/pytest_output.txt)
 
 ---
 
@@ -86,10 +76,10 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
 ## 4. Jenkins Verification Results
 
 - **Configuration Status**: Fully validated. The declarative `Jenkinsfile` adheres strictly to standard Jenkins DSL, handles Windows vs. Linux agents dynamically, and generates JUnit reports.
-- **Local Runtime Status**: Standalone Jenkins service is not running. Java JDK 24 is installed at `C:\Program Files\Java\jdk-24\bin\java.exe`.
+- **Local Runtime Status**: Standalone Jenkins service is not running. Java JDK 24 is installed at `C:\Program Files\Java\jdk-24\bin\java.exe`. Jenkins LTS officially supports Java 17 and 21 LTS.
 - **Pipeline Execution Simulation**: Executed successfully via `simulate_pipeline.ps1`:
-  - Passing run: All 6 stages completed in ~5 seconds with health probe returning HTTP 200.
-  - Failure run: Deliberate failure in Stage 3 immediately terminated the build and blocked deployment.
+  - **Passing run**: All 6 stages completed in ~5 seconds with health probe returning HTTP 200 ([`verification/pipeline_success_log.txt`](verification/pipeline_success_log.txt)).
+  - **Failure run**: Deliberate failure in Stage 3 immediately terminated the build and blocked deployment ([`verification/pipeline_failure_log.txt`](verification/pipeline_failure_log.txt)).
 
 ---
 
@@ -98,13 +88,13 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
 - **Architecture Selected**: Google Cloud Run (Serverless Container).
 - **Scripts Created**: `deploy_gcp.ps1` (Windows PowerShell) and `deploy_gcp.sh` (Linux/Jenkins).
 - **Cost Controls**: `--min-instances 0 --max-instances 1 --memory 256Mi` guarantees $0 idle cost within the GCP free tier.
-- **Runtime Status**: Local `gcloud` CLI is not installed. To deploy to GCP, either install Google Cloud CLI locally or run the deployment command in the free browser-based Google Cloud Shell.
+- **Runtime Status**: Local `gcloud` CLI is not installed. To deploy to GCP, either install Google Cloud CLI locally or run the deployment command in the free browser-based Google Cloud Shell (`shell.cloud.google.com`).
 
 ---
 
 ## 6. GitHub Status
 
-- **Local Git Repository**: Initialized on branch `main` with 3 commits.
+- **Local Git Repository**: Initialized on branch `main` with 4 commits.
 - **Clean Working Tree**: All code, tests, documentation, and scripts are committed.
 - **Remote Push Status**: GitHub CLI is installed, but the saved personal access token has expired.
 - **Ready to Push**: Project is 100% prepared to link to any remote GitHub repository URL.
@@ -133,9 +123,9 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
    - Copy the generated `https://devops-mini-project-xxxx.a.run.app` URL to present during viva.
 3. **Step 3 (Optional - For Jenkins GUI Demo)**:
    - Download `jenkins.war` from [jenkins.io/download](https://www.jenkins.io/download/).
-   - Run:
+   - Install Java 21 LTS (`winget install EclipseAdoptium.Temurin.21.JDK`) and run:
      ```powershell
-     & "C:\Program Files\Java\jdk-24\bin\java.exe" -jar jenkins.war --httpPort=8080
+     java -jar jenkins.war --httpPort=8080
      ```
 
 ---
@@ -153,7 +143,7 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
 For your college project report / PPT presentation:
 1. **Flask Home Page**: Browser view of `http://localhost:5000` showing the live status card and pipeline flow diagram.
 2. **Health Check JSON**: Browser view of `http://localhost:5000/health` showing `{"status": "healthy", ...}`.
-3. **Pytest Terminal Output**: Terminal screenshot showing `6 passed in 0.48s`.
+3. **Pytest Terminal Output**: Terminal screenshot showing `6 passed in 0.41s`.
 4. **Pipeline Simulation Success**: Terminal screenshot running `.\simulate_pipeline.ps1` with all 6 green stages.
 5. **Pipeline Simulation Failure**: Terminal screenshot running `.\simulate_pipeline.ps1 -SimulateFailure` showing Stage 3 aborting the build.
 6. **Git History**: Screenshot of `git log --oneline --graph` showing clean semantic commits.
@@ -161,25 +151,9 @@ For your college project report / PPT presentation:
 
 ---
 
-## 10. Five-Minute College Demonstration Script
+## 10. Five-Minute Demonstration Sequence
 
-- **Minute 0:00 - 0:45 (The Problem & Objectives)**:
-  - *"Good morning, Professors. Today I am demonstrating an Automated CI/CD Pipeline for a Python Web Application using GitHub, Jenkins, Docker, and Google Cloud Platform. The objective is to eliminate manual deployment errors, guarantee that no untested code reaches production, and package the service into a secure, portable container."*
-- **Minute 0:45 - 1:30 (Architecture Overview)**:
-  - Open `README.md` and display the Mermaid architecture diagram.
-  - Explain the 6 pipeline stages: Checkout &rarr; Dependencies &rarr; Testing (pytest) &rarr; Containerization (Docker) &rarr; Deployment &rarr; Health Verification.
-- **Minute 1:30 - 2:30 (Live Testing & Health Check)**:
-  - Run `.\venv\Scripts\pytest.exe -v` in the terminal to show all 6 tests passing.
-  - Explain the `/health` endpoint and why it is critical for container orchestrators and cloud load balancers.
-- **Minute 2:30 - 3:45 (End-to-End Pipeline Execution)**:
-  - Execute `powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1`.
-  - Point to each stage as it prints green status.
-  - Open `http://localhost:5000` in the browser to show the live application.
-- **Minute 3:45 - 4:30 (Automated Failure Handling Demonstration)**:
-  - Execute `powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1 -SimulateFailure`.
-  - *"Notice how Stage 3 caught the test failure and immediately aborted the pipeline. Stage 4 (Docker build) and Stage 5 (Deployment) were completely blocked. This guarantees broken code never reaches users."*
-- **Minute 4:30 - 5:00 (Security & Cloud Architecture)**:
-  - Highlight the non-root user in `Dockerfile` (`USER appuser`) and explain why Google Cloud Run was chosen (zero idle cost, automated HTTPS, serverless scaling).
+Refer to [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) for the exact minute-by-minute speaking script and walkthrough.
 
 ---
 
@@ -190,7 +164,7 @@ For your college project report / PPT presentation:
 cd d:\devops
 
 # 2. Run automated unit & integration tests
-.\venv\Scripts\pytest.exe -v
+.\venv\Scripts\python.exe -m pytest -v
 
 # 3. Run the complete passing CI/CD pipeline simulation
 powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1
@@ -203,7 +177,7 @@ powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1 -SimulateFailur
 # (Open http://localhost:5000 and http://localhost:5000/health in browser)
 
 # 6. Show Git commit history
-git log --oneline
+git log --oneline --graph
 ```
 
 ---
