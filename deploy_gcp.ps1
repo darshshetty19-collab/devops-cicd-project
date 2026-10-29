@@ -35,9 +35,9 @@ if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
 # 2. Check active GCP project
 $project = gcloud config get-value project 2>$null
 if (-not $project -or $project -eq "(unset)") {
-    Write-Error "CRITICAL: No active GCP project configured."
-    Write-Host "Run: gcloud auth login && gcloud config set project <YOUR_PROJECT_ID>" -ForegroundColor Yellow
-    exit 1
+    Write-Host "[!] Setting default GCP project to project-5d074ea5-fe5a-455d-acd..." -ForegroundColor Yellow
+    gcloud config set project project-5d074ea5-fe5a-455d-acd
+    $project = "project-5d074ea5-fe5a-455d-acd"
 }
 
 Write-Host "[+] Target GCP Project: $project" -ForegroundColor Green

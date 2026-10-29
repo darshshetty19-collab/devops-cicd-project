@@ -28,7 +28,7 @@
 | **Live Jenkins Server Execution** | **BLOCKED** | Host machine has Java JDK 24.0.1. Jenkins LTS requires Java 17 or 21 LTS. Installing JDK 21 / Docker requires administrator privileges. |
 | **GCP Cloud Run Scripts (`deploy_gcp.*`)** | **IMPLEMENTED, NOT VERIFIED** | Scripts configured with API pre-checks, cost caps (`min 0, max 1, 256Mi`), and live health probes. |
 | **Live Google Cloud Deployment** | **BLOCKED** | Google Cloud SDK (`gcloud`) is not installed locally and no GCP credentials exist on this laptop. |
-| **GitHub Remote Push** | **BLOCKED (Requires User Action)** | Git repo is ready to push; GitHub CLI (`gh`) token has expired, requiring student to run `gh auth login` or set git remote. |
+| **GitHub Remote Push** | **VERIFIED** | Pushed to [https://github.com/darshshetty19-collab/devops-cicd-project](https://github.com/darshshetty19-collab/devops-cicd-project) on branch `main`. |
 
 ---
 
@@ -94,10 +94,10 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
 
 ## 6. GitHub Status
 
-- **Local Git Repository**: Initialized on branch `main` with 4 commits.
-- **Clean Working Tree**: All code, tests, documentation, and scripts are committed.
-- **Remote Push Status**: GitHub CLI is installed, but the saved personal access token has expired.
-- **Ready to Push**: Project is 100% prepared to link to any remote GitHub repository URL.
+- **Remote Repository URL**: [https://github.com/darshshetty19-collab/devops-cicd-project](https://github.com/darshshetty19-collab/devops-cicd-project)
+- **Local Git Repository**: Initialized on branch `main` and fully tracked with `origin/main`.
+- **Clean Working Tree**: All code, tests, documentation, and verification logs are synchronized.
+- **Verification Evidence**: `gh repo view darshshetty19-collab/devops-cicd-project` confirmed live repository on GitHub.
 
 ---
 
@@ -116,8 +116,8 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
    - Go to [shell.cloud.google.com](https://shell.cloud.google.com) in your browser.
    - Clone your GitHub repository:
      ```bash
-     git clone https://github.com/<your-username>/devops-mini-project.git
-     cd devops-mini-project
+     git clone https://github.com/darshshetty19-collab/devops-cicd-project.git
+     cd devops-cicd-project
      bash deploy_gcp.sh
      ```
    - Copy the generated `https://devops-mini-project-xxxx.a.run.app` URL to present during viva.

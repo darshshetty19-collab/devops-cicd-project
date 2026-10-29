@@ -24,9 +24,9 @@ fi
 # 2. Check active GCP project
 PROJECT=$(gcloud config get-value project 2>/dev/null || true)
 if [ -z "$PROJECT" ] || [ "$PROJECT" = "(unset)" ]; then
-    echo "ERROR: No active GCP project configured."
-    echo "Run: gcloud auth login && gcloud config set project <PROJECT_ID>"
-    exit 1
+    echo "[!] No default project set. Setting project to project-5d074ea5-fe5a-455d-acd..."
+    gcloud config set project project-5d074ea5-fe5a-455d-acd || true
+    PROJECT="project-5d074ea5-fe5a-455d-acd"
 fi
 
 echo "[+] Target GCP Project: ${PROJECT}"

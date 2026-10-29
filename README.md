@@ -323,8 +323,7 @@ git add .
 git commit -m "feat: complete automated CI/CD pipeline project"
 
 # 3. Link your remote GitHub repository
-# Replace <username> with your actual GitHub username:
-git remote add origin https://github.com/<username>/devops-mini-project.git
+git remote add origin https://github.com/darshshetty19-collab/devops-cicd-project.git
 
 # 4. Push to main branch
 git push -u origin main
