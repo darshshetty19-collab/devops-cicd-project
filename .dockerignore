@@ -10,16 +10,24 @@ __pycache__/
 tests/
 .coverage
 htmlcov/
+test-results.xml
 
-# Git and Jenkins metadata
+# Git, CI/CD, and deployment scripts
 .git/
 .gitignore
 Jenkinsfile
+deploy_gcp.ps1
+deploy_gcp.sh
 
-# Documentation and project notes
+# Documentation and project reports
 README.md
 VIVA.md
+SUBMISSION_CHECKLIST.md
+*.md
 
 # Environment variables & secrets
 .env
+*.local
+credentials.json
+service-account-key.json
 *.log

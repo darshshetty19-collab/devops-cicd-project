@@ -10,10 +10,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies (curl for healthchecks if needed)
+# Install system dependencies (curl for healthchecks)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root system user for security compliance
+RUN useradd -m -u 1000 appuser
 
 # Copy dependencies list first to leverage Docker layer caching
 COPY requirements.txt .
@@ -23,6 +26,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source code
 COPY app.py .
+
+# Assign ownership of application directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
 
 # Inform Docker that the container listens on port 5000
 EXPOSE 5000
