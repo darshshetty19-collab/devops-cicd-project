@@ -8,15 +8,16 @@
 ## Quick Reference Summary of Our Project
 - **Application**: Python Flask REST Web App with a diagnostic dashboard (`app.py`).
 - **Health Check Endpoint**: `/health` returning HTTP 200 with JSON payload (`{"status": "healthy", ...}`).
-- **Testing Framework**: `pytest` running 5 automated tests in `tests/test_app.py`.
-- **Packaging**: Containerized using `Dockerfile` based on `python:3.11-slim`.
+- **Testing Framework**: `pytest` running 6 automated tests in `tests/test_app.py`.
+- **Packaging**: Containerized using `Dockerfile` based on `python:3.11-slim` running as non-root user `appuser`.
 - **CI/CD Orchestrator**: Declarative pipeline in `Jenkinsfile` with 6 automated stages.
+- **Local Simulation**: `simulate_pipeline.ps1` for local live demonstration of pipeline stages and failure handling.
 - **Source Control**: Git & GitHub with automated triggers.
 - **Cloud Hosting**: Google Cloud Platform (Cloud Run serverless containers).
 
 ---
 
-## 25 Essential Viva Questions & Practical Answers
+## 30 Essential Viva Questions & Practical Answers
 
 ### 1. What is DevOps?
 **Answer**:  
@@ -76,9 +77,11 @@ In our project's `Dockerfile`:
 - `FROM python:3.11-slim`: Specifies a lightweight, official Linux base image with Python 3.11 pre-installed.
 - `ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1`: Ensures logs flush immediately to the terminal and disables `.pyc` caching.
 - `WORKDIR /app`: Creates and sets `/app` as the active working directory inside the container.
+- `RUN useradd -m -u 1000 appuser`: Creates a dedicated unprivileged user for security compliance.
 - `COPY requirements.txt .`: Copies only the dependency manifest first to leverage Docker layer caching.
 - `RUN pip install --no-cache-dir -r requirements.txt`: Installs dependencies without storing cached `.whl` files, minimizing image size.
 - `COPY app.py .`: Copies the application source code.
+- `RUN chown -R appuser:appuser /app && USER appuser`: Drops root privileges and runs as `appuser`.
 - `EXPOSE 5000`: Documents that containerized traffic listens on port 5000.
 - `HEALTHCHECK`: Periodically executes an HTTP check to determine container health.
 - `CMD ["python", "app.py"]`: Specifies the command executed when the container starts.
@@ -93,25 +96,26 @@ To exploit **Docker Layer Caching**. Docker caches the result of each instructio
 
 ### 10. What is the role of `.dockerignore`?
 **Answer**:  
-`.dockerignore` excludes unnecessary files and directories (such as `venv/`, `.git/`, `.pytest_cache/`, `README.md`, and local secrets) from being sent to the Docker daemon during the `docker build` context transfer. This drastically speeds up build times and prevents sensitive files from being baked into the final image.
+`.dockerignore` excludes unnecessary files and directories (such as `venv/`, `.git/`, `.pytest_cache/`, `README.md`, `deploy_gcp.*`, and local secrets) from being sent to the Docker daemon during the `docker build` context transfer. This drastically speeds up build times and prevents sensitive files from being baked into the final image.
 
 ---
 
 ### 11. What is the role of the `/health` endpoint in microservices and DevOps?
 **Answer**:  
 The `/health` endpoint provides an automated mechanism for monitoring tools, container orchestrators (like Kubernetes and Docker), and cloud load balancers to verify if the application is running normally.  
-*In our app*: GET `/health` returns HTTP 200 with JSON `{"status": "healthy", "service": "...", "version": "...", "timestamp": "..."}`. If this endpoint returns an error or times out, the orchestrator restarts the container or the pipeline fails the deployment.
+*In our app*: GET `/health` returns HTTP 200 with JSON `{"status": "healthy", "service": "devops-mini-project-api", "version": "1.0.0", ...}`. If this endpoint returns an error or times out, the orchestrator restarts the container or the pipeline fails the deployment.
 
 ---
 
 ### 12. What tests are implemented in `tests/test_app.py` and what does each test verify?
 **Answer**:  
-We implemented 5 automated tests using `pytest`:
-1. `test_home_page_status_code_and_content`: Checks GET `/` returns HTTP 200 and renders HTML containing project metadata and operational indicators.
-2. `test_health_endpoint_status_code`: Verifies GET `/health` responds with HTTP 200.
-3. `test_health_endpoint_json_structure`: Confirms the response JSON includes required keys: `status == "healthy"`, `service`, `version`, and `timestamp`.
-4. `test_api_info_endpoint`: Validates that the metadata endpoint lists all five automated CI/CD pipeline stages.
-5. `test_404_not_found`: Validates proper error handling when requesting an invalid URI.
+We implemented 6 automated tests using `pytest`:
+1. `test_home_page_status_code_and_content`: Checks GET `/` returns HTTP 200, Content-Type `text/html`, and renders HTML containing project metadata and operational indicators.
+2. `test_health_endpoint_status_code_and_headers`: Verifies GET `/health` responds with HTTP 200 and `application/json` header.
+3. `test_health_endpoint_json_structure_and_values`: Confirms the response JSON includes required keys (`status == "healthy"`, `service`, `version`, `environment`, `timestamp`) and verifies timestamp validity.
+4. `test_health_endpoint_method_not_allowed`: Rejects invalid HTTP methods (POST to `/health` returns 405 Method Not Allowed).
+5. `test_api_info_endpoint`: Validates that the metadata endpoint lists all five automated CI/CD pipeline stages.
+6. `test_404_not_found`: Validates proper error handling when requesting an invalid URI.
 
 ---
 
@@ -232,8 +236,44 @@ Running `pytest --junitxml=test-results.xml` exports the test results into a sta
 3. Jenkins triggers build number `#N` using `Jenkinsfile`.
 4. Stage 1 checks out the commit into the workspace.
 5. Stage 2 activates the virtual environment and installs dependencies from `requirements.txt`.
-6. Stage 3 executes `pytest`. All 5 tests pass; test results are recorded.
+6. Stage 3 executes `pytest`. All 6 tests pass; test results are recorded in `test-results.xml`.
 7. Stage 4 builds the Docker image tagged `devops-mini-project:${BUILD_NUMBER}`.
 8. Stage 5 replaces the previous container with the new version.
 9. Stage 6 queries `http://localhost:5000/health` and verifies HTTP 200 OK.
 10. The post-action prints the operational URL and marks the pipeline build as **SUCCESS**.
+
+---
+
+### 26. Why is running a container as a non-root user (`USER appuser`) a security best practice?
+**Answer**:  
+By default, Docker containers execute processes as `root` (UID 0). If an attacker finds a vulnerability in the application that allows remote code execution (RCE) or a container breakout, they gain root privileges on the container and potentially the host kernel. Creating and switching to `USER appuser` (UID 1000) enforces the principle of least privilege, preventing unauthorized privilege escalation.
+
+---
+
+### 27. How does Google Cloud Run achieve zero idle cost?
+**Answer**:  
+Cloud Run is a serverless Container-as-a-Service (CaaS). By setting `--min-instances 0`, Cloud Run allocates zero container instances and zero CPU/memory when no requests are being served. When an incoming HTTP request arrives, Cloud Run performs a "cold start" (typically < 1 second for lightweight containers), processes the request, and spins back down to 0 after an idle timeout. The GCP free tier covers 2 million requests per month, resulting in $0 cost for academic demonstrations.
+
+---
+
+### 28. What is the difference between `.gitignore` and `.dockerignore`?
+**Answer**:  
+- **`.gitignore`**: Tells Git which files and directories to exclude from version control and repository commits (e.g., virtual environments, editor settings, local secrets).
+- **`.dockerignore`**: Tells the Docker CLI which files to exclude from the build context sent to the Docker daemon when executing `docker build`. This reduces image transfer time and prevents secret files or test caches from being baked into the image.
+
+---
+
+### 29. How did you verify pipeline failure handling in this project?
+**Answer**:  
+We executed our pipeline simulator with the `-SimulateFailure` flag:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1 -SimulateFailure
+```
+Stage 3 caught the test failure, emitted an error, and immediately aborted the pipeline. Stages 4, 5, and 6 were skipped, proving that broken code is prevented from reaching packaging and deployment.
+
+---
+
+### 30. How does the health check in the `Dockerfile` differ from the health check in Stage 6 of the `Jenkinsfile`?
+**Answer**:  
+- **Dockerfile `HEALTHCHECK`**: Built into the container image metadata. The Docker engine continuously polls `http://localhost:5000/health` every 30 seconds while the container is running in production and marks its status as `healthy` or `unhealthy` in `docker ps`.
+- **Jenkinsfile Stage 6 (`Verify Deployment`)**: A one-time deployment smoke test executed immediately after container launch to confirm that the container started cleanly, bound the host port, and is serving traffic before Jenkins marks the build as successful.

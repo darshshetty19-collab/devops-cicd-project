@@ -3,7 +3,8 @@
 [![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Jenkins%20%7C%20Docker%20%7C%20GCP-blue)](https://jenkins.io)
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-brightgreen)](https://python.org)
 [![Framework](https://img.shields.io/badge/Framework-Flask-black)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/Tests-pytest-orange)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(6%20Passed)-orange)](https://pytest.org)
+[![Security](https://img.shields.io/badge/Security-Non--Root%20Container-success)](#)
 [![License](https://img.shields.io/badge/License-Academic%20Mini--Project-lightgrey)](#)
 
 A complete, production-ready DevOps mini-project demonstrating an automated Continuous Integration and Continuous Deployment (CI/CD) pipeline for a containerized Python web application using **Jenkins**, **Docker**, **GitHub**, and **Google Cloud Platform (GCP)**.
@@ -21,19 +22,22 @@ A complete, production-ready DevOps mini-project demonstrating an automated Cont
 8. [Automated Testing with pytest](#automated-testing-with-pytest)
 9. [Docker Containerization](#docker-containerization)
 10. [Jenkins CI/CD Pipeline](#jenkins-cicd-pipeline)
-11. [GitHub Integration & Triggers](#github-integration--triggers)
-12. [Google Cloud Platform (GCP) Deployment](#google-cloud-platform-gcp-deployment)
-13. [Expected Results & Verification](#expected-results--verification)
-14. [Limitations](#limitations)
-15. [Future Enhancements](#future-enhancements)
-16. [Conclusion](#conclusion)
-17. [Viva Preparation & FAQs](#viva-preparation--faqs)
+11. [Local Pipeline Simulation](#local-pipeline-simulation)
+12. [GitHub Integration & Triggers](#github-integration--triggers)
+13. [Google Cloud Platform (GCP) Deployment](#google-cloud-platform-gcp-deployment)
+14. [Expected Results & Verification](#expected-results--verification)
+15. [Security & Compliance](#security--compliance)
+16. [Limitations](#limitations)
+17. [Future Enhancements](#future-enhancements)
+18. [Conclusion](#conclusion)
+19. [Viva Preparation & FAQs](#viva-preparation--faqs)
+20. [Submission Checklist](#submission-checklist)
 
 ---
 
 ## Abstract
 
-In modern software engineering, traditional manual deployment workflows are slow, error-prone, and inconsistent across different development and production environments. This project designs and implements an automated CI/CD pipeline for a Python Flask web application. Whenever code is committed and pushed to GitHub, the pipeline triggers automated unit and integration tests via **pytest**, builds a lightweight, portable **Docker** container image, runs deployment steps, and performs automated health verification checks against **Google Cloud Platform** or a local container runtime.
+In modern software engineering, traditional manual deployment workflows are slow, error-prone, and inconsistent across different development and production environments. This project designs and implements an automated CI/CD pipeline for a Python Flask web application. Whenever code is committed and pushed to GitHub, the pipeline triggers automated unit and integration tests via **pytest**, builds a secure, lightweight **Docker** container image running as a non-privileged user, runs deployment stages, and performs automated health verification checks against **Google Cloud Platform** or a local container runtime.
 
 ---
 
@@ -43,6 +47,7 @@ Manual build and deployment processes cause frequent setbacks in software delive
 - **"It works on my machine" syndrome**: Discrepancies between developer laptops and production servers lead to unexpected runtime crashes.
 - **Undetected regression bugs**: Deploying code without automated test gates introduces regressions into production.
 - **High operational latency**: Manual configuration, packaging, and server deployments consume developer time and delay release cycles.
+- **Security vulnerabilities**: Running production containers as `root` and committing untracked secret keys violates basic security compliance.
 
 ---
 
@@ -50,10 +55,10 @@ Manual build and deployment processes cause frequent setbacks in software delive
 
 1. Develop a lightweight Python Flask web service equipped with a responsive diagnostic dashboard and an automated `/health` endpoint.
 2. Establish unit and integration tests using `pytest` to validate application behavior prior to packaging.
-3. Package the application into a container using an optimized multi-platform `Dockerfile`.
+3. Package the application into a container using an optimized multi-platform `Dockerfile` with non-root security.
 4. Automate the end-to-end build, test, package, and deployment stages through a declarative `Jenkinsfile`.
 5. Integrate GitHub webhooks or automated polling to enable commit-triggered pipeline runs.
-6. Provide zero-downtime, serverless deployment to Google Cloud Platform (Cloud Run) with automated healthcheck verification.
+6. Provide zero-downtime, serverless deployment to Google Cloud Platform (Cloud Run) with automated healthcheck verification and cost controls ($0 idle cost).
 
 ---
 
@@ -76,7 +81,7 @@ flowchart TD
     end
     
     Jen --> Jenkins_Pipeline
-    S3 -.->|"If Test Fails"| Fail["Pipeline Halts & Alerts"]
+    S3 -.->|"If Any Test Fails"| Fail["Pipeline Halts & Alerts"]
     S4 -->|"Builds Image"| Dkr["Docker Engine / Registry"]
     S5 -->|"Deploys Container"| GCP["Google Cloud Platform (Cloud Run)"]
     S6 -->|"Polls /health"| WebApp["Live Web Application (:5000)"]
@@ -88,7 +93,7 @@ flowchart TD
 2. **Jenkins detects changes** via GitHub Webhook or SCM polling.
 3. **Jenkins executes pipeline stages**:
    - Checks out the latest commit.
-   - Installs dependencies into an isolated virtual environment.
+   - Installs dependencies into an isolated virtual environment (`venv`).
    - Executes `pytest`. If any test fails, the build **aborts immediately**, preventing broken code from advancing.
    - Builds a container image tagged with the Jenkins build number (`devops-mini-project:${BUILD_NUMBER}`) and `latest`.
    - Deploys the container to the runtime environment (Local Docker daemon or Google Cloud Run).
@@ -102,7 +107,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Python 3.11 / 3.13** | Core Programming Language | High readability, extensive ecosystem, standard for modern web and data engineering. |
 | **Flask** | Web Application Framework | Lightweight WSGI micro-framework, easy to understand and demonstrate. |
-| **pytest** | Test Framework | Industry-standard Python testing tool with support for fixtures and test reporting. |
+| **pytest** | Test Framework | Industry-standard Python testing tool with support for fixtures and JUnit reporting. |
 | **Git & GitHub** | Distributed Version Control & SCM | Tracks code revisions, provides branch management, and triggers CI/CD via webhooks. |
 | **Docker** | Containerization Platform | Packages the app, runtime, and OS dependencies into a portable, reproducible image. |
 | **Jenkins** | CI/CD Automation Engine | Open-source automation server executing declarative pipelines from code (`Jenkinsfile`). |
@@ -118,17 +123,19 @@ d:\devops\
 ├── app.py                 # Core Flask application with UI, /health & /api/info endpoints
 ├── requirements.txt       # Project dependencies (Flask, pytest, gunicorn, requests)
 ├── pytest.ini             # Pytest configuration file defining test paths and PYTHONPATH
-├── Dockerfile             # Multi-stage/optimized container build instructions
+├── Dockerfile             # Multi-stage/optimized container build instructions with non-root user
 ├── .dockerignore          # Files excluded from the Docker build context
-├── Jenkinsfile            # Declarative Jenkins CI/CD pipeline definition
+├── Jenkinsfile            # Declarative Jenkins CI/CD pipeline definition (6 stages)
+├── simulate_pipeline.ps1  # Local Jenkins pipeline simulator for viva demonstrations
 ├── deploy_gcp.ps1         # Automated GCP Cloud Run deployment script (Windows PowerShell)
 ├── deploy_gcp.sh          # Automated GCP Cloud Run deployment script (Linux / Bash / Jenkins)
 ├── .gitignore             # Git exclusion rules for virtualenvs, caches, and secrets
 ├── README.md              # Project documentation and operational guide
-├── VIVA.md                # 20+ comprehensive viva examination questions and answers
+├── VIVA.md                # 25 comprehensive viva examination questions and answers
+├── SUBMISSION_CHECKLIST.md# Official submission checklist, viva script, and demo steps
 │
 └── tests/
-    └── test_app.py        # Automated test suite (Status codes, JSON schema, 404 handler)
+    └── test_app.py        # Automated test suite (6 unit & integration tests)
 ```
 
 ---
@@ -177,21 +184,27 @@ The test suite in [`tests/test_app.py`](tests/test_app.py) ensures code quality 
 
 ### Running Tests
 ```powershell
-pytest -v
+.\venv\Scripts\pytest.exe -v
 ```
 
-### Test Suite Breakdown
-1. `test_home_page_status_code_and_content`: Verifies GET `/` returns HTTP 200 and renders the HTML dashboard containing project titles and live status.
-2. `test_health_endpoint_status_code`: Verifies GET `/health` returns HTTP 200, which is mandatory for container orchestrators.
-3. `test_health_endpoint_json_structure`: Verifies GET `/health` returns a valid JSON response containing `{"status": "healthy", "service": "...", "version": "...", "timestamp": "..."}`.
-4. `test_api_info_endpoint`: Validates that the metadata endpoint lists all five automated CI/CD pipeline stages.
-5. `test_404_not_found`: Confirms standard error handling by querying a non-existent route and expecting HTTP 404.
+### Test Suite Breakdown (6 Tests)
+1. `test_home_page_status_code_and_content`: Verifies GET `/` returns HTTP 200, Content-Type `text/html`, and renders the HTML dashboard containing project titles and live status.
+2. `test_health_endpoint_status_code_and_headers`: Verifies GET `/health` returns HTTP 200 and Content-Type `application/json`, which is mandatory for container orchestrators.
+3. `test_health_endpoint_json_structure_and_values`: Verifies GET `/health` returns a valid JSON response containing `{"status": "healthy", "service": "...", "version": "...", "timestamp": "..."}` and checks timestamp validity.
+4. `test_health_endpoint_method_not_allowed`: Rejects invalid HTTP methods (e.g., POST `/health` returns HTTP 405 Method Not Allowed).
+5. `test_api_info_endpoint`: Validates that the metadata endpoint lists all five automated CI/CD pipeline stages.
+6. `test_404_not_found`: Confirms standard error handling by querying a non-existent route and expecting HTTP 404.
 
 ---
 
 ## Docker Containerization
 
 The [`Dockerfile`](Dockerfile) builds a secure, minimal container image based on `python:3.11-slim`.
+
+### Key Dockerfile Features
+- **Layer Caching**: Copies `requirements.txt` before application code so dependency installation is cached.
+- **Least-Privilege Security**: Runs as an unprivileged user (`appuser`, UID 1000) rather than `root`.
+- **Built-in Healthcheck**: Includes `HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:5000/health || exit 1`.
 
 ### Docker Commands Reference
 
@@ -251,16 +264,16 @@ The pipeline is defined declaratively in [`Jenkinsfile`](Jenkinsfile).
 
 #### Option A: Running Jenkins as a Local Service / War
 1. Download `jenkins.war` from [https://www.jenkins.io/download/](https://www.jenkins.io/download/).
-2. Run with Java:
+2. Run with Java (Java 17 or 21 LTS recommended; JDK 24 available at `C:\Program Files\Java\jdk-24\bin\java.exe`):
    ```powershell
    & "C:\Program Files\Java\jdk-24\bin\java.exe" -jar jenkins.war --httpPort=8080
    ```
 3. Open `http://localhost:8080` in your browser.
-4. Retrieve the initial admin password shown in the console or located at:
+4. Retrieve the initial admin password located at:
    `C:\Users\<user>\.jenkins\secrets\initialAdminPassword`
 5. Install **Suggested Plugins** (Git, Pipeline, JUnit, Workspace Cleanup).
 
-#### Option B: Running Jenkins via Docker (Recommended when Docker Desktop is installed)
+#### Option B: Running Jenkins via Docker (When Docker Desktop is installed)
 ```bash
 docker run -d -p 8080:8080 -p 50000:50000 \
   -v jenkins_home:/var/jenkins_home \
@@ -272,7 +285,7 @@ docker run -d -p 8080:8080 -p 50000:50000 \
 1. Open Jenkins Dashboard &rarr; **New Item**.
 2. Enter item name: `devops-mini-project`.
 3. Select **Pipeline** and click **OK**.
-4. Under the **Build Triggers** tab, check **Poll SCM** (e.g., `H/5 * * * *` for every 5 minutes) or **GitHub hook trigger for GITScm polling**.
+4. Under the **Build Triggers** tab, check **Poll SCM** (`H/5 * * * *`) or **GitHub hook trigger for GITScm polling**.
 5. Under **Pipeline**:
    - Definition: **Pipeline script from SCM**
    - SCM: **Git**
@@ -283,11 +296,25 @@ docker run -d -p 8080:8080 -p 50000:50000 \
 
 ---
 
+## Local Pipeline Simulation
+
+For viva demonstrations where Jenkins or Docker Desktop may not be running, we created [`simulate_pipeline.ps1`](simulate_pipeline.ps1). It executes the exact 6 stages locally in PowerShell:
+
+```powershell
+# Run the complete passing pipeline:
+powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1
+
+# Demonstrate automated failure handling (Stage 3 aborts, preventing deployment):
+powershell -ExecutionPolicy Bypass -File .\simulate_pipeline.ps1 -SimulateFailure
+```
+
+---
+
 ## GitHub Integration & Triggers
 
 ### 1. Initialize and Push to GitHub
 ```powershell
-# 1. Initialize local Git repository (already completed)
+# 1. Initialize local Git repository (completed)
 git init
 git branch -M main
 
@@ -311,9 +338,6 @@ To trigger Jenkins automatically when you push code:
 4. **Which events**: Select **Just the push event**.
 5. Click **Add webhook**.
 
-> [!NOTE]
-> For local testing behind NAT/firewalls where your laptop doesn't have a public IP, use **Poll SCM** (`H/2 * * * *` in Jenkins) or tools like [ngrok](https://ngrok.com/) (`ngrok http 8080`) to provide a public endpoint for GitHub.
-
 ---
 
 ## Google Cloud Platform (GCP) Deployment
@@ -330,15 +354,12 @@ To trigger Jenkins automatically when you push code:
 
 ### Step-by-Step Deployment to GCP Cloud Run
 
-#### 1. Install Google Cloud SDK
-If not already installed, download the Google Cloud CLI installer from [https://cloud.google.com/sdk/docs/install](https://cloud.google.com/sdk/docs/install) and run the installer.
+#### 1. Install Google Cloud SDK or Use Google Cloud Shell
+Download the installer from [cloud.google.com/sdk/docs/install](https://cloud.google.com/sdk/docs/install) OR open [shell.cloud.google.com](https://shell.cloud.google.com) directly in your browser (no local installation required).
 
 #### 2. Authenticate and Select Project
 ```powershell
-# Authenticate with your Google account
 gcloud auth login
-
-# Set your active GCP project ID
 gcloud config set project <YOUR_GCP_PROJECT_ID>
 ```
 
@@ -361,7 +382,6 @@ gcloud run deploy devops-mini-project \
 ```
 
 #### 4. Live Cloud Run URL Verification
-Once complete, the command outputs a public HTTPS URL:
 ```text
 Service URL: https://devops-mini-project-xxxx-uc.a.run.app
 Health Check: https://devops-mini-project-xxxx-uc.a.run.app/health
@@ -374,20 +394,29 @@ Health Check: https://devops-mini-project-xxxx-uc.a.run.app/health
 | Stage | Expected Result | Verification Command |
 | :--- | :--- | :--- |
 | **Flask Local Run** | Web dashboard accessible on port 5000 | `curl http://localhost:5000` |
-| **Pytest Suite** | 5/5 tests passing | `pytest -v` |
+| **Pytest Suite** | 6/6 tests passing in < 1 second | `.\venv\Scripts\pytest.exe -v` |
 | **Health Check** | HTTP 200 with JSON `{"status": "healthy", ...}` | `curl http://localhost:5000/health` |
-| **Docker Build** | Image created with size < 250MB | `docker images devops-mini-project` |
+| **Docker Build** | Image created with non-root security | `docker images devops-mini-project` |
 | **Docker Container** | Container runs in detached mode | `docker ps -f name=devops-app-live` |
 | **Jenkins Build** | All 6 stages execute with blue/green status | Jenkins Dashboard status |
 | **GCP Cloud Run** | Public HTTPS endpoint returns operational status | `curl https://<service-url>/health` |
 
 ---
 
+## Security & Compliance
+
+1. **Non-Root Execution**: Container runs under a dedicated unprivileged user (`appuser`, UID 1000).
+2. **Secrets Protection**: All `.env`, `credentials.json`, `service-account-key.json`, and local caches are strictly ignored by `.gitignore` and `.dockerignore`.
+3. **No Hardcoded Credentials**: No passwords, private keys, or API tokens are checked into source files.
+4. **Controlled Cloud Resources**: Cloud Run deployment limits instance count (`--min-instances 0 --max-instances 1`), ensuring zero unexpected charges.
+
+---
+
 ## Limitations
 
 1. **Single-Node Execution**: In the local demonstration setup, Jenkins runs on the same workstation as the deployment target rather than a distributed agent cluster.
-2. **Secrets Storage**: Local development relies on environment variables rather than dedicated key vaults (e.g. HashiCorp Vault or GCP Secret Manager).
-3. **Database Layer**: The application is currently stateless; production implementations would integrate a persistent database (e.g. PostgreSQL or Cloud SQL) with database migration stages in the pipeline.
+2. **Stateless Web App**: The application demonstrates CI/CD for a stateless Flask web service; production architectures would incorporate an external managed database (e.g. Google Cloud SQL).
+3. **Polling vs. Direct Webhooks**: When testing locally behind NAT without a public IP, Jenkins uses SCM polling (`H/2 * * * *`) rather than real-time inbound GitHub webhooks.
 
 ---
 
@@ -407,4 +436,10 @@ This project successfully establishes a complete, automated CI/CD pipeline adher
 
 ## Viva Preparation & FAQs
 
-For an exhaustive list of 20+ viva examination questions with detailed, project-specific answers, refer to the dedicated [**VIVA.md**](VIVA.md) guide.
+For an exhaustive list of 25 viva examination questions with detailed, project-specific answers, refer to [**VIVA.md**](VIVA.md).
+
+---
+
+## Submission Checklist
+
+For the complete evaluation checklist, demonstration script, and viva preparation guide, refer to [**SUBMISSION_CHECKLIST.md**](SUBMISSION_CHECKLIST.md).
