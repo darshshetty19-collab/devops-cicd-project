@@ -1,0 +1,25 @@
+# Virtual environment and local python artifacts
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing artifacts
+.pytest_cache/
+tests/
+.coverage
+htmlcov/
+
+# Git and Jenkins metadata
+.git/
+.gitignore
+Jenkinsfile
+
+# Documentation and project notes
+README.md
+VIVA.md
+
+# Environment variables & secrets
+.env
+*.log
