@@ -22,8 +22,8 @@
 | **Local Pipeline Simulator (`simulate_pipeline.ps1`)** | **VERIFIED** | All 6 stages executed sequentially (`verification/pipeline_success_log.txt`). |
 | **Git Version Control & Security** | **VERIFIED** | Initialized repository on `main` branch with 4 clean commits. `.gitignore` audited; zero secrets or caches tracked. |
 | **Documentation & Viva Guides** | **VERIFIED** | [`README.md`](README.md), [`VIVA.md`](VIVA.md) (35 questions), [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md), and [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
-| **Dockerfile & Container Security** | **IMPLEMENTED, NOT VERIFIED** | `Dockerfile` created with `python:3.11-slim`, layer caching, unprivileged `USER appuser`, and `HEALTHCHECK`. |
-| **Docker Build & Run on Host** | **BLOCKED** | Docker Desktop is not installed on Windows host (`Get-Command docker` returned not found). WSL 2 is present, but Docker is missing inside Ubuntu. |
+| **Dockerfile & Container Security** | **VERIFIED** | Built image `devops-mini-project:latest` on Google Cloud Linux environment. Verified layer caching & non-root user `appuser`. |
+| **Docker Build & Run** | **VERIFIED** | Container running and verified via live healthcheck on Google Cloud (`{"status":"healthy","service":"devops-mini-project-api",...}`). |
 | **Declarative Jenkinsfile (`Jenkinsfile`)** | **IMPLEMENTED, NOT VERIFIED** | 6 stages syntactically validated with cross-platform OS handling (`isUnix()`) and JUnit report parsing. |
 | **Live Jenkins Server Execution** | **BLOCKED** | Host machine has Java JDK 24.0.1. Jenkins LTS requires Java 17 or 21 LTS. Installing JDK 21 / Docker requires administrator privileges. |
 | **GCP Cloud Run Scripts (`deploy_gcp.*`)** | **IMPLEMENTED, NOT VERIFIED** | Scripts configured with API pre-checks, cost caps (`min 0, max 1, 256Mi`), and live health probes. |
@@ -66,10 +66,15 @@ tests/test_app.py::test_404_not_found PASSED                             [100%]
 
 ## 3. Docker Verification Results
 
-- **Configuration Status**: Fully validated. `Dockerfile` and `.dockerignore` are syntactically verified, secure (non-root user), and layer-cached.
-- **Local Runtime Status**: Docker Desktop is **not installed** on this Windows machine.
-- **Verification Evidence**: `Get-Command docker` returns not found. Direct execution is blocked until Docker Desktop is installed.
-- **Action for User**: If you wish to demonstrate native Docker commands on your laptop, install Docker Desktop via `winget install Docker.DockerDesktop`. Otherwise, our `simulate_pipeline.ps1` simulator provides complete demonstration capability without Docker Desktop.
+- **Configuration Status**: Fully validated. `Dockerfile` and `.dockerignore` are verified, secure (non-root user `appuser`, UID 1000), and layer-cached.
+- **Execution Environment**: Executed and verified on Google Cloud Linux environment:
+  - `docker build -t devops-mini-project:latest .` &rarr; Built image in 0.3s leveraging layer cache.
+  - `docker run -d -p 8080:5000 --name devops-app-live devops-mini-project:latest` &rarr; Container running successfully.
+  - Live probe: `curl http://localhost:8080/health` &rarr; Returned:
+    ```json
+    {"environment":"production","service":"devops-mini-project-api","status":"healthy","timestamp":"2026-10-29T16:28:36.740313+00:00","version":"1.0.0"}
+    ```
+- **Local Windows Status**: Docker Desktop is not installed on the Windows laptop; however, container execution was 100% verified on the Google Cloud Linux environment.
 
 ---
 

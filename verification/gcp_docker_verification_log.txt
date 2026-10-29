@@ -1,0 +1,29 @@
+Google Cloud Docker Build & Container Execution Verification Log
+Environment: Google Cloud Shell Linux (project-5d074ea5-fe5a-455d-acd)
+Timestamp: 2026-10-29T16:28:36Z
+
+Command:
+docker build -t devops-mini-project:latest .
+docker run -d -p 8080:5000 --name devops-app-live devops-mini-project:latest
+curl http://localhost:8080/health
+
+Output:
+[+] Building 0.3s (13/13) FINISHED docker:default
+ => [internal] load build definition from Dockerfile
+ => => transferring dockerfile: 1.28kB
+ => [internal] load metadata for docker.io/library/python:3.11-slim
+ => [internal] load .dockerignore
+ => [1/8] FROM docker.io/library/python:3.11-slim
+ => CACHED [2/8] WORKDIR /app
+ => CACHED [3/8] RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+ => CACHED [4/8] RUN useradd -m -u 1000 appuser
+ => CACHED [5/8] COPY requirements.txt .
+ => CACHED [6/8] RUN pip install --no-cache-dir -r requirements.txt
+ => CACHED [7/8] COPY app.py .
+ => CACHED [8/8] RUN chown -R appuser:appuser /app
+ => exporting to image
+ => => naming to docker.io/library/devops-mini-project:latest
+
+Live Health Check Result:
+HTTP 200 OK
+{"environment":"production","service":"devops-mini-project-api","status":"healthy","timestamp":"2026-10-29T16:28:36.740313+00:00","version":"1.0.0"}
